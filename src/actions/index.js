@@ -1,25 +1,31 @@
 import axios from 'axios'
-import { FETCH_USERS } from './types'
+import { FETCH_USERS, FETCH_USERS_FAILED } from './types'
 
-import {
-  API,
-  limitQuery,
-  limitUserResults,
-  offsetQuery
-} from '../apiConfiguration'
+import { API, limitUserResults, offsetUserResults, readUsers } from '../apiConfiguration'
 
 export const headers = {
   Accept: 'application/json'
 }
 
-// export function fetchUsers() {
+// A thunk is just a function that receives dispatch, which is the whole point of the
+// middleware: the action creator gets to be async and to dispatch more than once.
+// This one dispatches exactly one of two outcomes, so the store always ends up in a
+// state the UI can render.
 export const fetchUsers = () => async dispatch => {
-  const endPoint = `${API}?${limitQuery}${limitUserResults}&${offsetQuery}${30}`
-
   try {
-    const response = await axios.get(endPoint, { headers })
-    return dispatch({ type: FETCH_USERS, payload: response.data })
+    // params rather than `${API}?limit=...`: if REACT_APP_API_URL already carries a
+    // query string, string concatenation produces a second '?' and the server sees one
+    // malformed parameter. axios merges properly and encodes values.
+    const response = await axios.get(API, {
+      headers,
+      params: { limit: limitUserResults, offset: offsetUserResults }
+    })
+
+    return dispatch({ type: FETCH_USERS, payload: readUsers(response.data) })
   } catch (err) {
-    console.log('err', err)
+    // Previously this was `console.log('err', err)` and nothing else, so a failed
+    // request left the store exactly as it was and the UI showed an empty list with no
+    // way to tell an outage from a genuinely empty result.
+    return dispatch({ type: FETCH_USERS_FAILED, payload: err.message })
   }
 }
