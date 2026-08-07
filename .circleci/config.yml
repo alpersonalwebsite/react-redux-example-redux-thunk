@@ -1,36 +1,27 @@
-version: 2
+version: 2.1
+
 jobs:
   build:
     docker:
-      - image: node:11.10.1
-    environment:
-      CI: false
-
+      # Pinned. `node:lts` floats, so the image silently changed under the project
+      # every time a new LTS shipped, which for a repo frozen on Create React App 3
+      # means the build can break without a single commit. 12 is this project's era.
+      - image: cimg/node:12.22
     steps:
       - checkout
 
-      - run: yarn install
-      # run: yarn run test
-      - run: yarn run build
+      # npm ci, not npm install: it installs exactly what package-lock.json pins and
+      # fails if the lockfile and package.json disagree, which is the whole reason to
+      # commit a lockfile. `npm install` was free to resolve something newer.
+      - run: npm ci
 
-  deploy:    
-    docker:
-      - image: buildpack-deps:trusty
-    steps:  
-      - checkout
-      - run: 
-          name: Deploy to Heroku
-          command: |
-            git push https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME.git master
+      # Tests were commented out. They run now, non-interactively.
+      - run:
+          name: Test
+          command: npm test -- --watchAll=false
 
-workflows:
-  version: 2
-  build-and-deploy: 
-    jobs:
-      - build
-      - deploy:
-          requires:
-            - build
-          filters:
-            branches:
-              only: master
+      # CI is deliberately NOT set to false here. Create React App treats warnings as
+      # errors when CI is set, and that is the point: the warnings it was hiding were
+      # real, including a react-hooks/exhaustive-deps bug in a sibling repo.
+      - run: npm run lint
+      - run: npm run build
