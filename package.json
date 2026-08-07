@@ -13,6 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "axios": "^0.19.0",
+    "prop-types": "^15.7.2",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-redux": "^7.2.4",
@@ -27,8 +28,8 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "lint": "eslint src/**/*.js --ignore-pattern node_modules/",
-    "fix": "eslint --fix src/**/*.js --ignore-pattern node_modules/",
+    "lint": "eslint src --ext .js",
+    "fix": "eslint --fix src --ext .js",
     "build": "react-scripts build && cp build/index.html build/200.html",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

@@ -1,13 +1,14 @@
 import { connect } from 'react-redux'
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import { fetchUsers } from './actions'
 
 class App extends Component {
-  componentDidMount() {
+  componentDidMount () {
     this.props.fetchUsers()
   }
 
-  render() {
+  render () {
     const { users, error } = this.props
 
     if (error) {
@@ -54,6 +55,25 @@ class App extends Component {
 }
 
 // The reducer now owns a shape rather than a bare array, so mapStateToProps unpacks it.
+// Declared rather than silenced. plugin:react/recommended enables react/prop-types, and
+// the lint script was not covering src/App.js at all (an unquoted `src/**/*.js` is not
+// recursive in sh), so these went unreported. PropTypes is the 2019 answer to "what
+// shape does this component expect", and it is worth having on a connected component in
+// particular, because the props arrive from mapStateToProps rather than from a parent
+// you can read.
+App.propTypes = {
+  users: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+      firstname: PropTypes.string,
+      lastname: PropTypes.string
+    })
+  ).isRequired,
+  // null until something fails, so not required.
+  error: PropTypes.string,
+  fetchUsers: PropTypes.func.isRequired
+}
+
 const mapStateToProps = ({ users }) => ({
   users: users.items,
   error: users.error
