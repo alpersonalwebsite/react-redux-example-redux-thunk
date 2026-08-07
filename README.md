@@ -72,9 +72,11 @@ dynos and the host started answering `404 No such app`.
 cp .env.example .env      # then edit it, .env is gitignored
 ```
 
-Only variables prefixed `REACT_APP_` reach the bundle, and Create React App **inlines
-them at build time**, so whatever you put there ends up in `build/static/js/*.js`. An
-endpoint URL is fine. A key or a token is not.
+Create React App exposes `REACT_APP_`-prefixed variables to the bundle, plus the two
+built-ins `NODE_ENV` and `PUBLIC_URL`; nothing else in your environment reaches client
+code. What does reach it is **inlined at build time**, so it ships inside
+`build/static/js/*.js` in plain sight. An endpoint URL is fine there. A key or a token
+is not.
 
 `readUsers` accepts both a bare array and a `{ "data": [ ... ] }` wrapper, but the
 field names are not negotiable: `App.js` renders `firstname` and `lastname` and keys
@@ -93,7 +95,7 @@ is pinned at `^5.16.0` while `eslint-config-standard@^13.0.1` declares a peer of
 `eslint >= 6.0.1`. npm 6, which this project was written against, ignored peer
 conflicts. npm 7 and later refuse to install at all:
 
-```
+```text
 npm error Conflicting peer dependency: eslint
 npm error peer eslint@">=6.0.1" from eslint-config-standard@13.0.1
 ```

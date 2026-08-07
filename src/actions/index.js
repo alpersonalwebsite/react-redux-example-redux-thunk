@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { FETCH_USERS, FETCH_USERS_FAILED } from './types'
+import { FETCH_USERS_REQUESTED, FETCH_USERS, FETCH_USERS_FAILED } from './types'
 
 import { API, limitUserResults, offsetUserResults, readUsers } from '../apiConfiguration'
 
@@ -12,6 +12,12 @@ export const headers = {
 // This one dispatches exactly one of two outcomes, so the store always ends up in a
 // state the UI can render.
 export const fetchUsers = () => async dispatch => {
+  // Dispatching BEFORE the request is the thing a thunk can do and redux-promise
+  // cannot: the middleware hands you dispatch, so there is a moment between "the user
+  // asked" and "the answer arrived" to put on screen. Without this the reducer's
+  // `loading` field existed and was never once true.
+  dispatch({ type: FETCH_USERS_REQUESTED })
+
   try {
     // params rather than `${API}?limit=...`: if REACT_APP_API_URL already carries a
     // query string, string concatenation produces a second '?' and the server sees one

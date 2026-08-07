@@ -1,4 +1,4 @@
-import { FETCH_USERS, FETCH_USERS_FAILED } from '../actions/types'
+import { FETCH_USERS_REQUESTED, FETCH_USERS, FETCH_USERS_FAILED } from '../actions/types'
 
 const initialState = {
   items: [],
@@ -8,6 +8,9 @@ const initialState = {
 
 export default (state = initialState, action) => {
   switch (action.type) {
+    case FETCH_USERS_REQUESTED:
+      return { ...state, loading: true, error: null }
+
     // REPLACE, not append. This used to be `[...state, ...action.payload]`, so every
     // fetch concatenated onto the previous one: dispatch fetchUsers twice and you saw
     // the same ten people twice, three times and you saw them three times. Measured on
