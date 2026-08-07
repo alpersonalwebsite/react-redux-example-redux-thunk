@@ -1,36 +1,71 @@
-version: 2
-jobs:
-  build:
-    docker:
-      - image: node:11.10.1
-    environment:
-      CI: false
+version: 2.1
 
+# Two runtimes on purpose.
+#
+# Node 12 is what this project was written against, and it is the only one where
+# `npm run build` works unmodified: Create React App 3 uses webpack 4, which asks
+# OpenSSL for MD4, and OpenSSL 3 (Node 17+) does not provide it. The image is pinned
+# rather than floating, because `node:lts` changed under the project every time a new
+# LTS shipped.
+#
+# Node 12 is also long past end of life, so it must not be the ONLY thing this is proven
+# against. The second job runs everything on a current Node with the
+# NODE_OPTIONS=--openssl-legacy-provider workaround the README tells readers to use,
+# which means CI actually verifies that instruction instead of just asserting it. If the
+# flag ever stops working, this goes red and the README is wrong, which is the point.
+#
+# Neither job sets CI=false. Create React App treats warnings as errors when CI is set,
+# and the warnings that setting used to hide were real.
+
+jobs:
+  build-era-node:
+    docker:
+      - image: cimg/node:12.22
     steps:
       - checkout
 
-      - run: yarn install
-      # run: yarn run test
-      - run: yarn run build
+      # npm ci, not npm install: it installs exactly what package-lock.json pins and
+      # fails if the lockfile and package.json disagree, which is the whole reason to
+      # commit a lockfile. `npm install` was free to resolve something newer.
+      - run: npm ci
 
-  deploy:    
+      # Tests were commented out. They run now, non-interactively.
+      - run:
+          name: Test
+          command: npm test -- --watchAll=false
+
+      # CI is deliberately NOT set to false here. Create React App treats warnings as
+      # errors when CI is set, and that is the point: the warnings it was hiding were
+      # real, including a react-hooks/exhaustive-deps bug in a sibling repo.
+      - run: npm run lint
+      - run: npm run build
+
+  build-current-node:
     docker:
-      - image: buildpack-deps:trusty
-    steps:  
+      - image: cimg/node:22.11
+    environment:
+      NODE_OPTIONS: --openssl-legacy-provider
+    steps:
       - checkout
-      - run: 
-          name: Deploy to Heroku
-          command: |
-            git push https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME.git master
+
+      # npm ci, not npm install: it installs exactly what package-lock.json pins and
+      # fails if the lockfile and package.json disagree, which is the whole reason to
+      # commit a lockfile. `npm install` was free to resolve something newer.
+      - run: npm ci
+
+      # Tests were commented out. They run now, non-interactively.
+      - run:
+          name: Test
+          command: npm test -- --watchAll=false
+
+      # CI is deliberately NOT set to false here. Create React App treats warnings as
+      # errors when CI is set, and that is the point: the warnings it was hiding were
+      # real, including a react-hooks/exhaustive-deps bug in a sibling repo.
+      - run: npm run lint
+      - run: npm run build
 
 workflows:
-  version: 2
-  build-and-deploy: 
+  build:
     jobs:
-      - build
-      - deploy:
-          requires:
-            - build
-          filters:
-            branches:
-              only: master
+      - build-era-node
+      - build-current-node
